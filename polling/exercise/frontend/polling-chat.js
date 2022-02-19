@@ -15,13 +15,29 @@ chat.addEventListener("submit", function (e) {
 });
 
 async function postNewMsg(user, text) {
-  // post to /poll a new message
-  // write code here
+  const data = { user, text };
+  const options = { method: "POST", body: JSON.stringify(data), headers: { "Content-Type": "application/json" } };
+  return fetch("/poll", options);
 }
 
+// What would be better:
+// 1) Calling this immediately every time the user ends a new message
+// 2) only get the messages that the user doesn't have yet
 async function getNewMsgs() {
-  // poll the server
-  // write code here
+  let json;
+
+  try {
+    const res = await fetch("/poll");
+    json = await res.json();
+  } catch (e) {
+    console.error("polling error", e)
+  }
+
+  allChat = json.msg;
+  render();
+
+  // Every time we call the function we set a new timeout, after having executed the above code first!
+  setTimeout(getNewMsgs, INTERVAL);
 }
 
 function render() {
