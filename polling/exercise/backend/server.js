@@ -21,9 +21,11 @@ app.use(bodyParser.json());
 app.use(express.static("frontend"));
 
 app.get("/poll", function (req, res) {
+  // Add .status(500) to see backoff at work
   res.json({
     msg: getMsgs(),
   })
+
 });
 
 app.post("/poll", function (req, res) {
