@@ -1,10 +1,13 @@
+// These are all node libraries
 import http2 from "http2";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+
 import handler from "serve-handler";
 import nanobuffer from "nanobuffer";
 
+// Here we keep track of currently connected streams
 let connections = [];
 
 const msg = new nanobuffer(50);
@@ -29,12 +32,29 @@ const server = http2.createSecureServer({
   key: fs.readFileSync(path.join(__dirname, "/../key.pem")),
 });
 
-/*
- *
- * Code goes here
- *
- */
+// Both request and stream will always fire on a browser request: first stream, then request
+server.on('stream', (stream, headers) => {
+  const path = headers[":path"];
+  const method = headers[":method"];
 
+  if (path === '/msgs' && method === "GET") {
+    // Immediately respond with status ok & encoding
+    console.log('connected a stream ' + stream.id);
+    stream.respond({ ":status": 200, "content-type": "text/plain; charset=utf-8" });
+
+    // First response
+    stream.write(JSON.stringify({ msg: getMsgs() }));
+    connections.push(stream);
+
+    // This happens when connection closes
+    stream.on("close", () => {
+      console.log("disconnected " + stream.id);
+      connections = connections.filter(stream => stream !== stream);
+     })
+  }
+} )
+
+// This time we don't use express, so we have to do a bit more router work ourselves
 server.on("request", async (req, res) => {
   const path = req.headers[":path"];
   const method = req.headers[":method"];
@@ -46,6 +66,7 @@ server.on("request", async (req, res) => {
     });
   } else if (method === "POST") {
     // get data out of post
+    // This is essentially what the body parser library does
     const buffers = [];
     for await (const chunk of req) {
       buffers.push(chunk);
@@ -53,11 +74,11 @@ server.on("request", async (req, res) => {
     const data = Buffer.concat(buffers).toString();
     const { user, text } = JSON.parse(data);
 
-    /*
-     *
-     * some code goes here
-     *
-     */
+    msg.push({ user, text, time: Date.now() })
+    res.end();
+
+    // On post, immediately post message to connections
+    connections.forEach(stream => stream.write(JSON.stringify({msg: getMsgs()})))
   }
 });
 

@@ -32,11 +32,52 @@ async function postNewMsg(user, text) {
 }
 
 async function getNewMsgs() {
-  /*
-   *
-   * code goes here
-   *
-   */
+  let reader;
+  const utf8Decoder = new TextDecoder("utf-8");
+
+  try {
+    const res = await fetch("/msgs");
+
+    // This will assign a readable text stream, that you can continuously get stuff back from
+    // (since it's a stream). If connection would close, we would use json parser, since that waits until incoming stuff is finished
+    reader = res.body.getReader(); 
+  } catch (e) {
+    console.log(e)
+  }
+
+  // Ctrl + cmd + space brings up emoji picker
+  // presence = button thing in top right of UI
+  presence.innerText = '🐸';
+
+  let readerResponse;
+    let done;
+
+  do { 
+    try {
+      // This thing waits until API sends something new back
+      readerResponse = await reader.read();
+    } catch (e) {
+      console.log(e)
+      presence.innerText = '👹';
+      return;
+    }
+
+    const chunk = utf8Decoder.decode(readerResponse.value, { stream: true })
+
+    // This would become true if server connection closes. In reality for us it never closes
+    done = readerResponse.done;
+
+    try {
+      const json = JSON.parse(chunk);
+      allChat = json.msg;
+      render();
+    } catch (e) {
+      console.error("parse error", e);
+    }
+
+  } while (!done) // Done should never be true as long as connection is open
+  
+  presence.innerText = '👹';
 }
 
 function render() {
