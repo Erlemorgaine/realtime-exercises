@@ -1,5 +1,9 @@
 import crypto from "crypto";
 
+// This is basically the handshake between client and server. 
+// acceptKey comes from client. 
+// We need that particular string 258EAFA5 etc for every websocket
+// This is just to make sure that both parties are speaking the same protocol
 function generateAcceptValue(acceptKey) {
   return (
     crypto

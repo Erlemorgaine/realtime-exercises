@@ -38,6 +38,7 @@ async function getNewMsgs() {
   try {
     const res = await fetch("/msgs");
 
+
     // This will assign a readable text stream, that you can continuously get stuff back from
     // (since it's a stream). If connection would close, we would use json parser, since that waits until incoming stuff is finished
     reader = res.body.getReader(); 

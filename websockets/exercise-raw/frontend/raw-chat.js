@@ -11,14 +11,30 @@ chat.addEventListener("submit", function (e) {
 });
 
 async function postNewMsg(user, text) {
-  // code goes here
+  const data = { user, text };
+
+  // This is how you post to the server
+  ws.send(JSON.stringify(data));
 }
 
-/*
- *
- * your code goes here
- *
- */
+// ws stands for websocket protocol, second param says what client knows how to parse / identify
+// Server will pick the one it knows too
+const ws = new WebSocket("ws://localhost:8080", ["json"]);
+ws.addEventListener("open", () => {
+  console.log("WS connected");
+  presence.innerText = "🐢";
+})
+
+// This gets called whenever a message comes back from server
+ws.addEventListener("message", (event) => {
+  const data = JSON.parse(event.data);
+  allChat = data.msg;
+  render();
+});
+
+ws.addEventListener("close", () => {
+  presence.innerText = "🍓";
+})
 
 function render() {
   const html = allChat.map(({ user, text }) => template(user, text));
